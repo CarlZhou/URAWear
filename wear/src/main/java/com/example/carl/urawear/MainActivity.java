@@ -36,6 +36,7 @@ public class MainActivity extends Activity implements SensorEventListener {
     //UI Elements
     private CircledImageView mCircledImageView;
     private TextView mTextView;
+    private Button mButton;
 
     //Sensor and SensorManager
     Sensor mHeartRateSensor;
@@ -54,7 +55,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         setContentView(R.layout.heart_layout);
 
 //        setAmbientEnabled();
-//        retrieveTripInfo();
+//        changeButtonText();
 
         mTeleportClient = new TeleportClient(this);
 
@@ -81,10 +82,13 @@ public class MainActivity extends Activity implements SensorEventListener {
             public void onLayoutInflated(WatchViewStub stub) {
                 mCircledImageView = (CircledImageView) stub.findViewById(R.id.circle);
                 mTextView = (TextView) stub.findViewById(R.id.value);
+                mButton = (Button) stub.findViewById(R.id.startTripBtn);
             }
         });
 
         startService(new Intent(this, SensorService.class));
+
+        retrieveTripInfo();
 
 //        stopService(new Intent(this, SensorService.class));
 //
@@ -173,7 +177,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 
         mTeleportClient.setOnGetMessageTask(new ShowToastFromOnGetMessageTask());
 
-        if (isTripStart) {
+        if (!isTripStart) {
             startTrip();
         } else {
             stopTrip();
@@ -213,8 +217,10 @@ public class MainActivity extends Activity implements SensorEventListener {
     }
 
     public void changeButtonText(){
-        Button p1_button = (Button)findViewById(R.id.startTripBtn);
-        p1_button.setText(isTripStart ? "End Trip" : "Start Trip");
+//        Button p1_button = (Button)findViewById(R.id.startTripBtn);
+        if (mButton != null) {
+            mButton.setText(isTripStart ? "End Trip" : "Start Trip");
+        }
     }
 
     public void startTrip(){
