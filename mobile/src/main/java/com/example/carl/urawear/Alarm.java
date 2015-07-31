@@ -23,8 +23,8 @@ public class Alarm extends BroadcastReceiver {
     TeleportClient.OnGetMessageTask mMessageTask;
     Context mContext;
 
-    final long DumpWindow = 5; // in Mins
-    final long AlarmFrequency = 1000 * 60 * 1; // in Secs
+    final long DumpWindow = 1; // in Mins
+    final long AlarmFrequency = 1000 * 30 * 1; // in Secs
 
     @Override
     public void onReceive(Context context, Intent intent)
@@ -136,8 +136,12 @@ public class Alarm extends BroadcastReceiver {
         String nowTSAbsolute = URAWearLog.getCurrentTimeStamp();
 
         URAWearLog.data(nowTSAbsolute, data, this.getClass());
-        if (isDumpNeeded())
+        if (isDumpNeeded()) {
+            Toast.makeText(mContext, "Dump Needed Write File", Toast.LENGTH_LONG).show();
             URAWearLog.DumpDataLogsToDisk();
+        } else {
+            Toast.makeText(mContext, "No need to dump - DEBUG", Toast.LENGTH_LONG).show();
+        }
 
     }
 

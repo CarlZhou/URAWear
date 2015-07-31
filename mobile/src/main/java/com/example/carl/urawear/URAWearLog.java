@@ -51,7 +51,6 @@ public class URAWearLog {
     {
         synchronized (datalogs)
         {
-
             for (String line : datalogs)
             {
                 WriteToFile(line + "\n");
