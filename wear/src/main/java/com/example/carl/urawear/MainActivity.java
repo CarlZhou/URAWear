@@ -54,7 +54,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         setContentView(R.layout.heart_layout);
 
 //        setAmbientEnabled();
-        retrieveTripInfo();
+//        retrieveTripInfo();
 
         mTeleportClient = new TeleportClient(this);
 
@@ -103,7 +103,7 @@ public class MainActivity extends Activity implements SensorEventListener {
     @Override
     protected void onResume() {
         super.onResume();
-        retrieveTripInfo();
+//        retrieveTripInfo();
         //Register the listener
         if (mSensorManager != null){
 //            mSensorManager.registerListener(this, mHeartRateSensor, SensorManager.SENSOR_DELAY_NORMAL);
@@ -145,7 +145,7 @@ public class MainActivity extends Activity implements SensorEventListener {
     @Override
     protected void onStart() {
         super.onStart();
-        retrieveTripInfo();
+//        retrieveTripInfo();
         mTeleportClient.connect();
     }
 
