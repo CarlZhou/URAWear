@@ -74,11 +74,9 @@ public class SensorService extends TeleportService implements SensorEventListene
     private Sensor mHeartrateSensor;
     SensorNames mSensorNames;
 
-    // Update Notification timer and send data to phone
-    Timer updateNotificationTimer;
-    final long DATA_TO_PHONE_FREQUENCY = 1000 * 60; // in milliseconds
     // Sensor Log Timer
     Timer sensorLogTimer;
+    final long DATA_TO_PHONE_FREQUENCY = 1000 * 60; // in milliseconds
     final long GET_SENSOR_DATA_FREQUENCY = 1000 * 60; // in milliseconds
     // How long will the window stays
     final long GET_SENSOR_DATA_PERIOD = 1000 * 30; // in milliseconds
@@ -109,10 +107,6 @@ public class SensorService extends TeleportService implements SensorEventListene
         mDataMap = new HashMap<>();
         mAvailableSensors = new Vector<>();
 
-        updateNotificationTimer = new Timer();
-        TimerTask updateNotification = new UpdateNotificationTimerTask();
-        updateNotificationTimer.scheduleAtFixedRate(updateNotification, 0, DATA_TO_PHONE_FREQUENCY);
-
         NotificationCompat.Builder notificationBuilder =
                 new NotificationCompat.Builder(this)
                         .setSmallIcon(R.drawable.bike)
@@ -129,15 +123,16 @@ public class SensorService extends TeleportService implements SensorEventListene
 
         notificationBuilder.extend(new NotificationCompat.WearableExtender().addPage(secondPageNotification));
 
-
         startForeground(1, notificationBuilder.build());
 
-//        startMeasurement();
+        if (sensorLogTimer == null) {
+            sensorLogTimer = new Timer();
+            TimerTask mearsurementTask = new StartMeasurementTimerTask();
+            sensorLogTimer.scheduleAtFixedRate(mearsurementTask, 0, GET_SENSOR_DATA_FREQUENCY);
 
-        sensorLogTimer = new Timer();
-        TimerTask mearsurementTask = new StartMeasurementTimerTask();
-        sensorLogTimer.schedule(mearsurementTask, 0, GET_SENSOR_DATA_FREQUENCY);
-
+            TimerTask updateNotification = new UpdateNotificationTimerTask();
+            sensorLogTimer.scheduleAtFixedRate(updateNotification, 0, DATA_TO_PHONE_FREQUENCY);
+        }
     }
 
     @Override
@@ -145,6 +140,7 @@ public class SensorService extends TeleportService implements SensorEventListene
         super.onDestroy();
         stopMeasurement();
         mTeleportClient.disconnect();
+        sensorLogTimer.cancel();
     }
 
     public class StartMeasurementTimerTask extends TimerTask {
@@ -441,6 +437,8 @@ public class SensorService extends TeleportService implements SensorEventListene
         mNotificationManager.notify(
                 notifyID,
                 notificationBuilder.build());
+
+        sendDataToPhone();
     }
 
     String getSensorNameByIndex(int index) {
@@ -474,7 +472,6 @@ public class SensorService extends TeleportService implements SensorEventListene
         @Override
         public void run() {
             updateNotification();
-            sendDataToPhone();
         }
     }
 
@@ -498,8 +495,8 @@ public class SensorService extends TeleportService implements SensorEventListene
 
             mainJson.put("Data", dataJson);
 
-            mTeleportClient.setOnGetMessageTask(new ShowToastFromOnGetMessageTask());
             mTeleportClient.sendMessage(mainJson.toString(2), null);
+            mTeleportClient.setOnGetMessageTask(new ShowToastFromOnGetMessageTask());
         }
         catch (JSONException e) {
             e.printStackTrace();
