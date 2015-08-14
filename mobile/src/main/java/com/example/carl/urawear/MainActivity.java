@@ -150,13 +150,17 @@ public class MainActivity extends ActionBarActivity {
     public void parseDataJsonFromWatch(JSONObject dataJSON) {
         try {
 
-            // Light
-            double heartRateReading = dataJSON.getDouble("Heart Rate");
-            mHeartRateView.setText("Heart Rate: " + heartRateReading);
+            // Heart Rate
+            if (!dataJSON.isNull("Heart Rate")) {
+                double heartRateReading = dataJSON.getDouble("Heart Rate");
+                mHeartRateView.setText("Heart Rate: " + heartRateReading);
+            } else {
+                mHeartRateView.setText("Heart Rate: " + "null");
+            }
 
             // Light
             double lightReading = dataJSON.getDouble("Light");
-            mGravityTextView.setText("Light: " + lightReading);
+            mLightTextView.setText("Light: " + lightReading);
 
             // Magnetic Field
             double magFieldReading = dataJSON.getDouble("Magnetic Field");

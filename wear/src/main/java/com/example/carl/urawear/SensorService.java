@@ -18,6 +18,7 @@ import android.util.Log;
 import android.widget.Toast;
 
 import com.google.android.gms.wearable.DataMap;
+import com.google.android.gms.wearable.Wearable;
 import com.mariux.teleport.lib.TeleportClient;
 
 import java.text.SimpleDateFormat;
@@ -40,9 +41,11 @@ import org.json.JSONObject;
 public class SensorService extends TeleportService implements SensorEventListener {
     private static final String TAG = "SensorService";
 
+    // For storing sensors' data
     public HashMap<String, Float> mDataMap;
     public Vector<String> mAvailableSensors;
 
+    // All sensors' LABEL
     private final static int SENS_ACCELEROMETER = Sensor.TYPE_ACCELEROMETER;
     private final static int SENS_MAGNETIC_FIELD = Sensor.TYPE_MAGNETIC_FIELD;
     // 3 = @Deprecated Orientation
@@ -66,20 +69,28 @@ public class SensorService extends TeleportService implements SensorEventListene
     private final static int SENS_GEOMAGNETIC = Sensor.TYPE_GEOMAGNETIC_ROTATION_VECTOR;
     private final static int SENS_HEARTRATE = Sensor.TYPE_HEART_RATE;
 
+    // Sensor Manager
     SensorManager mSensorManager;
-
     private Sensor mHeartrateSensor;
-
     SensorNames mSensorNames;
 
+    // Update Notification timer and send data to phone
     Timer updateNotificationTimer;
+    final long DATA_TO_PHONE_FREQUENCY = 1000 * 60; // in milliseconds
+    // Sensor Log Timer
+    Timer sensorLogTimer;
+    final long GET_SENSOR_DATA_FREQUENCY = 1000 * 60; // in milliseconds
+    // How long will the window stays
+    final long GET_SENSOR_DATA_PERIOD = 1000 * 30; // in milliseconds
+    // Heart Rate Flag
+    private static Boolean isHeartRateNew = false;
 
+    // Communication manager (between phone and watch)
     TeleportClient mTeleportClient;
     TeleportClient.OnGetMessageTask mMessageTask;
 
+    // Battery Level
     Integer mBatteryLevel = 0;
-
-//    private DeviceClient client;
 
     @Override
     public void onCreate() {
@@ -100,7 +111,7 @@ public class SensorService extends TeleportService implements SensorEventListene
 
         updateNotificationTimer = new Timer();
         TimerTask updateNotification = new UpdateNotificationTimerTask();
-        updateNotificationTimer.scheduleAtFixedRate(updateNotification, 0, 10000);
+        updateNotificationTimer.scheduleAtFixedRate(updateNotification, 0, DATA_TO_PHONE_FREQUENCY);
 
         NotificationCompat.Builder notificationBuilder =
                 new NotificationCompat.Builder(this)
@@ -121,22 +132,43 @@ public class SensorService extends TeleportService implements SensorEventListene
 
         startForeground(1, notificationBuilder.build());
 
-        startMeasurement();
+//        startMeasurement();
 
-//        setOnGetMessageTask(new UpdateBatteryLevelTask());
+        sensorLogTimer = new Timer();
+        TimerTask mearsurementTask = new StartMeasurementTimerTask();
+        sensorLogTimer.schedule(mearsurementTask, 0, GET_SENSOR_DATA_FREQUENCY);
 
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-//        mTeleportClient.disconnect();
         stopMeasurement();
+        mTeleportClient.disconnect();
+    }
+
+    public class StartMeasurementTimerTask extends TimerTask {
+        @Override
+        public void run() {
+            startMeasurement();
+            TimerTask stopMeasurementTask = new StopMeasurementTimerTask();
+            sensorLogTimer.schedule(stopMeasurementTask, GET_SENSOR_DATA_PERIOD);
+        }
+    }
+
+    public class StopMeasurementTimerTask extends TimerTask {
+        @Override
+        public void run() {
+            stopMeasurement();
+        }
     }
 
     protected void startMeasurement() {
 
+        // Sensor Manager
         mSensorManager = ((SensorManager) getSystemService(SENSOR_SERVICE));
+        // Init Heart Rate Boolean
+        isHeartRateNew = false;
 
         Sensor accelerometerSensor = mSensorManager.getDefaultSensor(SENS_ACCELEROMETER);
         Sensor ambientTemperatureSensor = mSensorManager.getDefaultSensor(SENS_AMBIENT_TEMPERATURE);
@@ -327,29 +359,29 @@ public class SensorService extends TeleportService implements SensorEventListene
     private void stopMeasurement() {
         if (mSensorManager != null)
             mSensorManager.unregisterListener(this);
-        mTeleportClient.disconnect();
     }
 
     @Override
     public void onSensorChanged(SensorEvent event) {
-//        client.sendSensorData(event.sensor.getType(), event.accuracy, event.timestamp, event.values);
         if (event != null) {
             String sensorName = mSensorNames.getName(event.sensor.getType());
             Float sensorReading = event.values[0];
             if (event.sensor.getType() == SENS_HEARTRATE) {
                 if (sensorReading > 0) {
                     mDataMap.put(sensorName, sensorReading);
+                    isHeartRateNew = true;
+                } else if (!isHeartRateNew){
+                    // Only set the heart rate to 0 if there's
+                    // no heart rate sensed in a window period
+                    mDataMap.put(sensorName, sensorReading);
                 }
             } else {
                 mDataMap.put(sensorName, sensorReading);
             }
-
-//            Log.d(TAG, "Log " + sensorName + " Reading: " + sensorReading );
         }
-//        String text = event.sensor.getType() + " Value: " + event.values[0];
-//        updateNotification(text);
     }
 
+    // update Watch notification UI
     void updateNotification() {
         NotificationManager mNotificationManager =
                 (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
@@ -360,8 +392,6 @@ public class SensorService extends TeleportService implements SensorEventListene
 
         Bitmap icon = BitmapFactory.decodeResource(this.getResources(),
                 R.drawable.icon);
-
-//        notificationBuilder.extend(new NotificationCompat.WearableExtender().setBackground(icon));
 
         NotificationCompat.Builder notificationBuilder =
                 new NotificationCompat.Builder(this)
@@ -404,11 +434,6 @@ public class SensorService extends TeleportService implements SensorEventListene
 
         notificationBuilder.extend(new NotificationCompat.WearableExtender().addPages(notificationList).setBackground(icon).addAction(action));
 
-
-//        Bitmap icon = BitmapFactory.decodeResource(this.getResources(),
-//                R.drawable.icon);
-
-//        notificationBuilder.extend(new NotificationCompat.WearableExtender().setBackground(icon));
         int notifyID = 1;
 
         // Because the ID remains unchanged, the existing notification is
@@ -416,8 +441,6 @@ public class SensorService extends TeleportService implements SensorEventListene
         mNotificationManager.notify(
                 notifyID,
                 notificationBuilder.build());
-
-        sendDataToPhone();
     }
 
     String getSensorNameByIndex(int index) {
@@ -446,23 +469,16 @@ public class SensorService extends TeleportService implements SensorEventListene
 
     }
 
+    // update notification task
     public class UpdateNotificationTimerTask extends TimerTask {
         @Override
         public void run() {
-//            sendDataToPhone();
             updateNotification();
+            sendDataToPhone();
         }
     }
 
-//    public class UpdateBatteryLevelTask extends TeleportService.OnGetMessageTask {
-//        @Override
-//        protected void onPostExecute(String path) {
-//            String newBatteryLevel = path;
-//            mBatteryLevel = Integer.parseInt(newBatteryLevel);
-//            Toast.makeText(getApplicationContext(), "new battery level: " + newBatteryLevel, Toast.LENGTH_SHORT).show();
-//        }
-//    }
-
+    // Send logged data to phone
     public void sendDataToPhone() {
         try {
             JSONObject mainJson = new JSONObject();
@@ -514,9 +530,6 @@ public class SensorService extends TeleportService implements SensorEventListene
                 mBatteryLevel = Integer.parseInt(newBatteryLevel);
                 Toast.makeText(getApplicationContext(), "new battery level: " + newBatteryLevel, Toast.LENGTH_SHORT).show();
             }
-
-
-//            Toast.makeText(getApplicationContext(),"Message - "+path,Toast.LENGTH_SHORT).show();
 
             //let's reset the task (otherwise it will be executed only once)
             mTeleportClient.setOnGetMessageTask(new ShowToastFromOnGetMessageTask());

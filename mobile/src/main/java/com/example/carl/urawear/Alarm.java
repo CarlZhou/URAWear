@@ -85,9 +85,13 @@ public class Alarm extends BroadcastReceiver {
 
             String dataString = "";
 
-            // Light
-            double heartRateReading = dataJSON.getDouble("Heart Rate");
-            dataString += "Heart Rate: " + heartRateReading + " ";
+            // Heart Rate
+            if (!dataJSON.isNull("Heart Rate")) {
+                double heartRateReading = dataJSON.getDouble("Heart Rate");
+                dataString += "Heart Rate: " + heartRateReading + " ";
+            } else {
+                dataString += "Heart Rate: " + "null" + " ";
+            }
 
             // Light
             double lightReading = dataJSON.getDouble("Light");
