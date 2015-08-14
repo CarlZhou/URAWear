@@ -83,6 +83,7 @@ public class SensorService extends TeleportService implements SensorEventListene
     final long GET_SENSOR_DATA_PERIOD = 1000 * 30; // in milliseconds
     // Heart Rate Flag
     private static Boolean isHeartRateNew = false;
+    private static Boolean isHeartSensorScheduled = false;
 
     // Communication manager (between phone and watch)
     TeleportClient mTeleportClient;
@@ -262,7 +263,7 @@ public class SensorService extends TeleportService implements SensorEventListene
                 Log.w(TAG, "No Uncalibrated Gyroscope Sensor found");
             }
 
-            if (mHeartrateSensor != null) {
+            if (mHeartrateSensor != null && !isHeartSensorScheduled) {
                 final int measurementDuration   = 10;   // Seconds
                 final int measurementBreak      = 5;    // Seconds
 
@@ -285,6 +286,7 @@ public class SensorService extends TeleportService implements SensorEventListene
                                 mSensorManager.unregisterListener(SensorService.this, mHeartrateSensor);
                             }
                         }, 3, measurementDuration + measurementBreak, TimeUnit.SECONDS);
+                isHeartSensorScheduled = true;
             } else {
                 Log.d(TAG, "No Heartrate Sensor found");
             }

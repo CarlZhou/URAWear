@@ -34,8 +34,10 @@ public class Alarm extends BroadcastReceiver {
         wl.acquire();
 
         mContext = context;
-        if (mTeleportClient != null)
+        if (mTeleportClient != null) {
             mTeleportClient.disconnect();
+            mTeleportClient = null;
+        }
 
         mTeleportClient = new TeleportClient(context);
         mTeleportClient.setOnSyncDataItemTask(new ShowToastHelloWorldTask());
