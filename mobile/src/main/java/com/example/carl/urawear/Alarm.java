@@ -24,7 +24,7 @@ public class Alarm extends BroadcastReceiver {
     Context mContext;
 
     final long DumpWindow = 1; // in Mins
-    final long AlarmFrequency = 1000 * 30 * 1; // in Secs
+    final long AlarmFrequency = 1000 * 60 * 1; // in Secs
 
     @Override
     public void onReceive(Context context, Intent intent)
@@ -127,6 +127,7 @@ public class Alarm extends BroadcastReceiver {
             String lastUpdate = dataJSON.getString("lastUpdate");
             dataString += "LastUpdate: " + lastUpdate;
 
+            // Send Debug Toast
             Toast.makeText(mContext, "Data" + dataJSON.toString(), Toast.LENGTH_SHORT).show(); // For example
             mTeleportClient.disconnect();
             SaveData(dataString);
@@ -143,9 +144,11 @@ public class Alarm extends BroadcastReceiver {
 
         URAWearLog.data(nowTSAbsolute, data, this.getClass());
         if (isDumpNeeded()) {
+            // Send Debug Toast
             Toast.makeText(mContext, "Dump Needed Write File", Toast.LENGTH_LONG).show();
             URAWearLog.DumpDataLogsToDisk();
         } else {
+            // Send Debug Toast
             Toast.makeText(mContext, "No need to dump - DEBUG", Toast.LENGTH_LONG).show();
         }
 

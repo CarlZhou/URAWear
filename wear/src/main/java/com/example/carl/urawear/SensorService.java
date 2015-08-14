@@ -264,6 +264,7 @@ public class SensorService extends TeleportService implements SensorEventListene
             }
 
             if (mHeartrateSensor != null && !isHeartSensorScheduled) {
+                // Heart Rate Schedule
                 final int measurementDuration   = 10;   // Seconds
                 final int measurementBreak      = 5;    // Seconds
 

@@ -4,6 +4,7 @@ import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
 
+// Doing nothing
 public class URAWearService extends Service {
     Alarm alarm = new Alarm();
     public void onCreate()

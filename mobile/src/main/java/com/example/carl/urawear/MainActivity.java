@@ -55,8 +55,9 @@ public class MainActivity extends ActionBarActivity {
 
         mTeleportClient.setOnGetMessageTask(mMessageTask);
 
-        Intent i= new Intent(this, URAWearService.class);
-        startService(i);
+        // For Debugging Only
+//        Intent i= new Intent(this, URAWearService.class);
+//        startService(i);
     }
 
 
