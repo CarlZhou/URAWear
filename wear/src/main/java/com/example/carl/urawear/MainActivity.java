@@ -38,11 +38,6 @@ public class MainActivity extends Activity implements SensorEventListener {
     private TextView mTextView;
     private Button mButton;
 
-    //Sensor and SensorManager
-    Sensor mHeartRateSensor;
-    SensorManager mSensorManager;
-    SensorNames mSensorNames;
-
     // API
     TeleportClient mTeleportClient;
     TeleportClient.OnGetMessageTask mMessageTask;
@@ -54,9 +49,6 @@ public class MainActivity extends Activity implements SensorEventListener {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.heart_layout);
 
-//        setAmbientEnabled();
-//        changeButtonText();
-
         mTeleportClient = new TeleportClient(this);
 
         mTeleportClient.setOnSyncDataItemTask(new ShowToastHelloWorldTask());
@@ -65,15 +57,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 
         mTeleportClient.setOnGetMessageTask(mMessageTask);
 
-//        mTeleportClient.connect();
-
         isFromNotification = getIntent().getBooleanExtra("FromNotification", false);
-
-        //Sensor and sensor manager
-        mSensorManager = ((SensorManager)getSystemService(SENSOR_SERVICE));
-        mHeartRateSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_HEART_RATE);
-
-//        Log.v(TAG ,"Sensor: " + mHeartRateSensor.toString());
 
         //View
         final WatchViewStub stub = (WatchViewStub) findViewById(R.id.watch_view_stub);
@@ -86,47 +70,25 @@ public class MainActivity extends Activity implements SensorEventListener {
             }
         });
 
-        startService(new Intent(this, SensorService.class));
-
         retrieveTripInfo();
 
-//        stopService(new Intent(this, SensorService.class));
-//
-//        if (!isFromNotification) {
-//            startService(new Intent(this, SensorService.class));
-//        } else {
-//            boolean isTripStart = getIntent().getBooleanExtra("isTripStart", false);
-//            if (isTripStart) {
-//                startService(new Intent(this, SensorService.class).putExtra("TripStart", false));
-//            } else {
-//                startService(new Intent(this, SensorService.class).putExtra("TripStart", false));
-//            }
-//        }
+        stopService(new Intent(this, SensorService.class));
+        startService(new Intent(this, SensorService.class));
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-//        retrieveTripInfo();
-        //Register the listener
-        if (mSensorManager != null){
-//            mSensorManager.registerListener(this, mHeartRateSensor, SensorManager.SENSOR_DELAY_NORMAL);
-        }
-
         if (mTeleportClient == null) {
             mTeleportClient = new TeleportClient(this);
             mTeleportClient.setOnSyncDataItemTask(new ShowToastHelloWorldTask());
         }
-
         mTeleportClient.connect();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        //Unregister the listener
-        if (mSensorManager!=null)
-            mSensorManager.unregisterListener(this);
     }
 
     @Override
@@ -149,7 +111,6 @@ public class MainActivity extends Activity implements SensorEventListener {
     @Override
     protected void onStart() {
         super.onStart();
-//        retrieveTripInfo();
         mTeleportClient.connect();
     }
 
@@ -160,21 +121,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 
     }
 
-//    public void syncDataItem(View v) {
-//        //Let's sync a String!
-//        if (mTeleportClient != null) {
-//            mTeleportClient.connect();
-//            mTeleportClient.syncString("hello", "Hello, World!");
-//        } else {
-//            mTeleportClient = new TeleportClient(this);
-//            mTeleportClient.setOnSyncDataItemTask(new ShowToastHelloWorldTask());
-//            mTeleportClient.connect();
-//            mTeleportClient.syncString("hello", "Hello, World!");
-//        }
-//    }
-
     public void sendMessage(View v) {
-
         mTeleportClient.setOnGetMessageTask(new ShowToastFromOnGetMessageTask());
 
         if (!isTripStart) {
@@ -217,7 +164,6 @@ public class MainActivity extends Activity implements SensorEventListener {
     }
 
     public void changeButtonText(){
-//        Button p1_button = (Button)findViewById(R.id.startTripBtn);
         if (mButton != null) {
             mButton.setText(isTripStart ? "End Trip" : "Start Trip");
         }

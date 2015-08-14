@@ -6,6 +6,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.hardware.Sensor;
@@ -94,19 +95,26 @@ public class SensorService extends TeleportService implements SensorEventListene
     public void onCreate() {
         super.onCreate();
 
+        // Close connection between phone if there's one
+        if (mTeleportClient != null) {
+            stopMeasurement();
+            mTeleportClient.disconnect();
+            mTeleportClient = null;
+        }
+
+        // New Connection Client
         mTeleportClient = new TeleportClient(this);
-
         mMessageTask = new ShowToastFromOnGetMessageTask();
-
         mTeleportClient.setOnGetMessageTask(mMessageTask);
         mTeleportClient.setOnSyncDataItemTask(new ShowToastHelloWorldTask());
-
         mTeleportClient.connect();
 
+        // Sensor DataHolder
         mSensorNames = new SensorNames();
         mDataMap = new HashMap<>();
         mAvailableSensors = new Vector<>();
 
+        // Build Notificaiton app on watch
         NotificationCompat.Builder notificationBuilder =
                 new NotificationCompat.Builder(this)
                         .setSmallIcon(R.drawable.bike)
@@ -125,6 +133,7 @@ public class SensorService extends TeleportService implements SensorEventListene
 
         startForeground(1, notificationBuilder.build());
 
+        // Init Timer
         if (sensorLogTimer == null) {
             sensorLogTimer = new Timer();
             TimerTask mearsurementTask = new StartMeasurementTimerTask();
@@ -132,6 +141,20 @@ public class SensorService extends TeleportService implements SensorEventListene
 
             TimerTask updateNotification = new UpdateNotificationTimerTask();
             sensorLogTimer.scheduleAtFixedRate(updateNotification, 0, DATA_TO_PHONE_FREQUENCY);
+        }
+    }
+
+    public void retrieveTripInfo(){
+        SharedPreferences settings;
+        settings = getSharedPreferences("TRIP_INFO", Context.MODE_PRIVATE);
+
+        String tripStartTime = settings.getString("START_TIME", "");
+        Boolean isTripStart = settings.getBoolean("IS_TRIP_START", false);
+
+        if (isTripStart) {
+            Toast.makeText(getApplicationContext(), "Trip starts at:  " + tripStartTime, Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(getApplicationContext(), "Trip ends at:  " + tripStartTime, Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -437,8 +460,6 @@ public class SensorService extends TeleportService implements SensorEventListene
         mNotificationManager.notify(
                 notifyID,
                 notificationBuilder.build());
-
-        sendDataToPhone();
     }
 
     String getSensorNameByIndex(int index) {
@@ -471,7 +492,10 @@ public class SensorService extends TeleportService implements SensorEventListene
     public class UpdateNotificationTimerTask extends TimerTask {
         @Override
         public void run() {
+            // Update notification
             updateNotification();
+            // Sync Data with Phone
+            sendDataToPhone();
         }
     }
 
@@ -496,7 +520,8 @@ public class SensorService extends TeleportService implements SensorEventListene
             mainJson.put("Data", dataJson);
 
             mTeleportClient.sendMessage(mainJson.toString(2), null);
-            mTeleportClient.setOnGetMessageTask(new ShowToastFromOnGetMessageTask());
+            Log.w(TAG, "Send Data To Phone");
+//            mTeleportClient.setOnGetMessageTask(new ShowToastFromOnGetMessageTask());
         }
         catch (JSONException e) {
             e.printStackTrace();
